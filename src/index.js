@@ -5,7 +5,7 @@ try {
   const startYear = core.getInput("start-year");
   const dataFolder = core.getInput("data-folder");
   const pageId = core.getInput("page-id");
-  const token = core.getInput("token");
+  const token = core.getInput("page-token");
 
   core.setSecret(token);
   core.setSecret(pageId);
