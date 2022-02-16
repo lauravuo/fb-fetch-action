@@ -1,13 +1,20 @@
-name: "Hello World"
-description: "Greet someone and record the time"
+name: "FB fetch action"
+description: "Fetch latest posts for a page"
 inputs:
-  who-to-greet: # id of input
-    description: "Who to greet"
+  page-id: # page id
+    description: "FB page id"
     required: true
-    default: "World"
-outputs:
-  time: # id of output
-    description: "The time we greeted you"
+  page-token: # page token
+    description: "FB page token"
+    required: true
+  data-folder:
+    description: "Target folder path"
+    required: false
+    default: "./data/fb/"
+  start-year:
+    description: "Since year to fetch the posts"
+    required: false
+    default: 2022
 runs:
   using: "node16"
   main: "dist/index.js"
