@@ -39675,9 +39675,10 @@ module.exports = async ({ startYear, dataFolder, pageId, token }) => {
 
   const currentYear = new Date().getFullYear();
   if (!initialFetchDone) {
+    const fromYear = parseInt(startYear);
     const years = Array.from(
-      { length: currentYear - startYear + 1 },
-      (_, i) => startYear + i
+      { length: currentYear - fromYear + 1 },
+      (_, i) => fromYear + i
     );
     years.forEach((year) => {
       fs.mkdirSync(`${dataFolder}${year}`, { recursive: true });
