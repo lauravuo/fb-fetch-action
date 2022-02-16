@@ -57,7 +57,7 @@ module.exports = async ({ startYear, dataFolder, pageId, token }) => {
             } posts for ${fromDate.getFullYear()}-${month}`
           );
           const path = `${dataFolder}${year}/${month}`;
-          fs.mkdirSync(path);
+          fs.mkdirSync(path, { recursive: true });
           fs.writeFileSync(
             `${path}/${year}-${month}.json`,
             JSON.stringify(response.data)
@@ -74,13 +74,12 @@ module.exports = async ({ startYear, dataFolder, pageId, token }) => {
 
   const currentYear = new Date().getFullYear();
   if (!initialFetchDone) {
-    fs.mkdirSync(dataFolder);
     const years = Array.from(
       { length: currentYear - startYear + 1 },
       (_, i) => startYear + i
     );
     years.forEach((year) => {
-      fs.mkdirSync(`${dataFolder}${year}`);
+      fs.mkdirSync(`${dataFolder}${year}`, { recursive: true });
       Array.from(Array(12).keys()).forEach((month) => {
         fetchFB(year, month);
       });
@@ -90,11 +89,8 @@ module.exports = async ({ startYear, dataFolder, pageId, token }) => {
     const formattedMonth = formatMonth(currentMonth);
     const yearPath = `${dataFolder}${currentYear}`;
     const monthPath = `${dataFolder}${currentYear}/${formattedMonth}`;
-    if (!fs.existsSync(yearPath)) {
-      fs.mkdirSync(yearPath);
-    }
     if (!fs.existsSync(monthPath)) {
-      fs.mkdirSync(monthPath);
+      fs.mkdirSync(monthPath, { recursive: true });
     }
     fs.rmSync(monthPath, { force: true, recursive: true });
     fetchFB(currentYear, currentMonth);
