@@ -24,6 +24,27 @@ module.exports = async ({ startYear, dataFolder, pageId, token }) => {
     return yearMonth < 10 ? "0" + yearMonth : yearMonth;
   };
 
+  const ensureFolder = (monthPath) => {
+    if (!fs.existsSync(monthPath)) {
+      fs.mkdirSync(monthPath, { recursive: true });
+    }
+    fs.rmSync(monthPath, { force: true, recursive: true });
+  }
+
+  const resetData = () => {
+    // Handle both previous and current month to make sure
+    // posts in the last day of month is also taken in account
+    const currentMonth = new Date().getMonth();
+    const previousMonth = currentMonth - 1 < 0 ? 11 : currentMonth - 1;
+    const currentYear = new Date().getFullYear();
+    const previousMonthYear = previousMonth > currentMonth ? currentYear - 1 : currentYear;
+    const formattedMonth = formatMonth(currentMonth);
+    const formattedPreviousMonth = formatMonth(previousMonth)
+    ensureFolder(`${dataFolder}${previousMonthYear}/${formattedPreviousMonth}`)
+    ensureFolder(`${dataFolder}${currentYear}/${formattedMonth}`)
+    return [{ year: previousMonthYear, month: previousMonth}, { year: currentYear, month: currentMonth}]
+  }
+
   const fetchFB = (year, monthIndex) => {
     const lastMonth = monthIndex === 11;
     const fromTs = Math.floor(new Date(year, monthIndex, 1).getTime() / 1000);
@@ -86,14 +107,9 @@ module.exports = async ({ startYear, dataFolder, pageId, token }) => {
       });
     });
   } else {
-    const currentMonth = new Date().getMonth();
-    const formattedMonth = formatMonth(currentMonth);
-    const yearPath = `${dataFolder}${currentYear}`;
-    const monthPath = `${dataFolder}${currentYear}/${formattedMonth}`;
-    if (!fs.existsSync(monthPath)) {
-      fs.mkdirSync(monthPath, { recursive: true });
+    const months = resetData();
+    for (month of months) {
+      fetchFB(month.year, month.month);
     }
-    fs.rmSync(monthPath, { force: true, recursive: true });
-    fetchFB(currentYear, currentMonth);
   }
 };
