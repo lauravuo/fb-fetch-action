@@ -11,10 +11,10 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@actions/core": "^1.6.0",
+    "@actions/core": "^3.0.1",
     "fb": "^2.0.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.33.1"
+    "@vercel/ncc": "^0.45.0"
   }
 }

@@ -45,7 +45,7 @@ module.exports = async ({ startYear, dataFolder, pageId, token }) => {
     return [{ year: previousMonthYear, month: previousMonth}, { year: currentYear, month: currentMonth}]
   }
 
-  const fetchFB = (year, monthIndex) => {
+  const fetchFB = async (year, monthIndex) => {
     const lastMonth = monthIndex === 11;
     const fromTs = Math.floor(new Date(year, monthIndex, 1).getTime() / 1000);
     const toTs = Math.floor(
@@ -63,34 +63,40 @@ module.exports = async ({ startYear, dataFolder, pageId, token }) => {
       return;
     }
     const untilTs = toTs > currentTime ? currentTime : toTs;
-    FB.api(
-      `/${pageId}/feed?fields=full_picture,attachments,message,created_time,id&since=${fromTs}&until=${untilTs}`,
-      (response) => {
-        if (!response || response.error) {
-          console.log(!response ? "error occurred" : response.error);
-          return;
+    const response = await new Promise((resolve) => {
+      FB.api(
+        `/${pageId}/feed?fields=full_picture,attachments,message,created_time,id&since=${fromTs}&until=${untilTs}`,
+        resolve
+      );
+    });
+
+    if (!response || response.error) {
+      throw new Error(
+        !response
+          ? "Facebook API returned no response"
+          : response.error.message || JSON.stringify(response.error)
+      );
+    }
+
+    if (response.data.length > 0) {
+      const fromDate = new Date(fromTs * 1000);
+      console.log(
+        `Fetched ${
+          response.data.length
+        } posts for ${fromDate.getFullYear()}-${month}`
+      );
+      const path = `${dataFolder}${year}/${month}`;
+      fs.mkdirSync(path, { recursive: true });
+      fs.writeFileSync(
+        `${path}/${year}-${month}.json`,
+        JSON.stringify(response.data)
+      );
+      response.data.forEach(async (post) => {
+        if (post.full_picture) {
+          await fetchUrl(post.full_picture, `${path}/${post.id}.jpg`);
         }
-        if (response.data.length > 0) {
-          const fromDate = new Date(fromTs * 1000);
-          console.log(
-            `Fetched ${
-              response.data.length
-            } posts for ${fromDate.getFullYear()}-${month}`
-          );
-          const path = `${dataFolder}${year}/${month}`;
-          fs.mkdirSync(path, { recursive: true });
-          fs.writeFileSync(
-            `${path}/${year}-${month}.json`,
-            JSON.stringify(response.data)
-          );
-          response.data.forEach(async (post) => {
-            if (post.full_picture) {
-              await fetchUrl(post.full_picture, `${path}/${post.id}.jpg`);
-            }
-          });
-        }
-      }
-    );
+      });
+    }
   };
 
   const currentYear = new Date().getFullYear();
@@ -100,16 +106,18 @@ module.exports = async ({ startYear, dataFolder, pageId, token }) => {
       { length: currentYear - fromYear + 1 },
       (_, i) => fromYear + i
     );
-    years.forEach((year) => {
-      fs.mkdirSync(`${dataFolder}${year}`, { recursive: true });
-      Array.from(Array(12).keys()).forEach((month) => {
-        fetchFB(year, month);
-      });
-    });
+    await Promise.all(
+      years.flatMap((year) => {
+        fs.mkdirSync(`${dataFolder}${year}`, { recursive: true });
+        return Array.from(Array(12).keys()).map((month) =>
+          fetchFB(year, month)
+        );
+      })
+    );
   } else {
     const months = resetData();
-    for (month of months) {
-      fetchFB(month.year, month.month);
-    }
+    await Promise.all(
+      months.map((month) => fetchFB(month.year, month.month))
+    );
   }
 };
